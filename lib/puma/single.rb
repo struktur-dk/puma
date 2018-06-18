@@ -3,11 +3,19 @@ require 'puma/detect'
 require 'puma/plugin'
 
 module Puma
+  # This class is instantiated by the `Puma::Launcher` and used
+  # to boot and serve a Ruby application when no puma "workers" are needed
+  # i.e. only using "threaded" mode. For example `$ puma -t 1:5`
+  #
+  # At the core of this class is running an instance of `Puma::Server` which
+  # gets created via the `start_server` method from the `Puma::Runner` class
+  # that this inherits from.
   class Single < Runner
     def stats
       b = @server.backlog || 0
       r = @server.running || 0
-      %Q!{ "backlog": #{b}, "running": #{r} }!
+      t = @server.pool_capacity || 0
+      %Q!{ "backlog": #{b}, "running": #{r}, "pool_capacity": #{t} }!
     end
 
     def restart

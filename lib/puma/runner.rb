@@ -2,6 +2,9 @@ require 'puma/server'
 require 'puma/const'
 
 module Puma
+  # Generic class that is used by `Puma::Cluster` and `Puma::Single` to
+  # serve requests. This class spawns a new instance of `Puma::Server` via
+  # a call to `start_server`.
   class Runner
     def initialize(cli, events)
       @launcher = cli
@@ -17,6 +20,10 @@ module Puma
 
     def development?
       @options[:environment] == "development"
+    end
+
+    def test?
+      @options[:environment] == "test"
     end
 
     def log(str)
@@ -165,7 +172,7 @@ module Puma
         server.early_hints = true
       end
 
-      unless development?
+      unless development? || test?
         server.leak_stack_on_error = false
       end
 

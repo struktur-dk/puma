@@ -157,17 +157,27 @@ $ puma -b 'unix:///var/run/puma.sock?umask=0111'
 ```
 
 Need a bit of security? Use SSL sockets:
-
 ```
 $ puma -b 'ssl://127.0.0.1:9292?key=path_to_key&cert=path_to_cert'
 ```
+#### Controlling SSL Cipher Suites
+Need to use or avoid specific SSL cipher suites? Use ssl_cipher_filter or ssl_cipher_list options.
+#####Ruby:
+```
+$ puma -b 'ssl://127.0.0.1:9292?key=path_to_key&cert=path_to_cert&ssl_cipher_filter=!aNULL:AES+SHA'
+```
+#####JRuby:
+```
+$ puma -b 'ssl://127.0.0.1:9292?keystore=path_to_keystore&keystore-pass=keystore_password&ssl_cipher_list=TLS_RSA_WITH_AES_128_CBC_SHA,TLS_RSA_WITH_AES_256_CBC_SHA'
+```
+See https://www.openssl.org/docs/man1.0.2/apps/ciphers.html for cipher filter format and full list of cipher suites.
 
 ### Control/Status Server
 
 Puma has a built-in status/control app that can be used to query and control Puma itself.
 
 ```
-$ puma --control tcp://127.0.0.1:9293 --control-token foo
+$ puma --control-url tcp://127.0.0.1:9293 --control-token foo
 ```
 
 Puma will start the control server on localhost port 9293. All requests to the control server will need to include `token=foo` as a query parameter. This allows for simple authentication. Check out [status.rb](https://github.com/puma/puma/blob/master/lib/puma/app/status.rb) to see what the app has available.
@@ -175,7 +185,7 @@ Puma will start the control server on localhost port 9293. All requests to the c
 You can also interact with the control server via `pumactl`. This command will restart Puma:
 
 ```
-$ pumactl -C 'tcp://127.0.0.1:9293' --control-token foo restart
+$ pumactl --control-url 'tcp://127.0.0.1:9293' --control-token foo restart
 ```
 
 To see a list of `pumactl` options, use `pumactl --help`.
@@ -217,10 +227,10 @@ Some platforms do not support all Puma features.
 
 ## Known Bugs
 
-For MRI versions 2.2.7, 2.2.8, 2.2.9, 2.3.4 and 2.4.1, you may see ```stream closed in another thread (IOError)```. It may be caused by a [Ruby bug](https://bugs.ruby-lang.org/issues/13632). It can be fixed with the gem https://rubygems.org/gems/stopgap_13632:
+For MRI versions 2.2.7, 2.2.8, 2.2.9, 2.2.10 2.3.4 and 2.4.1, you may see ```stream closed in another thread (IOError)```. It may be caused by a [Ruby bug](https://bugs.ruby-lang.org/issues/13632). It can be fixed with the gem https://rubygems.org/gems/stopgap_13632:
 
 ```ruby
-if %w(2.2.7 2.2.8 2.2.9 2.3.4 2.4.1).include? RUBY_VERSION
+if %w(2.2.7 2.2.8 2.2.9 2.2.10 2.3.4 2.4.1).include? RUBY_VERSION
   begin
     require 'stopgap_13632'
   rescue LoadError

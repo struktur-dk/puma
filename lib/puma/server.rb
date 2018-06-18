@@ -23,6 +23,15 @@ require 'socket'
 module Puma
 
   # The HTTP Server itself. Serves out a single Rack app.
+  #
+  # This class is used by the `Puma::Single` and `Puma::Cluster` classes
+  # to generate one or more `Puma::Server` instances capable of handling requests.
+  # Each Puma process will contain one `Puma::Server` instacne.
+  #
+  # The `Puma::Server` instance pulls requests from the socket, adds them to a
+  # `Puma::Reactor` where they get eventually passed to a `Puma::ThreadPool`.
+  #
+  # Each `Puma::Server` will have one reactor and one thread pool.
   class Server
 
     include Puma::Const
@@ -159,6 +168,18 @@ module Puma
       @thread_pool and @thread_pool.spawned
     end
 
+
+    # This number represents the number of requests that
+    # the server is capable of taking right now.
+    #
+    # For example if the number is 5 then it means
+    # there are 5 threads sitting idle ready to take
+    # a request. If one request comes in, then the
+    # value would be 4 until it finishes processing.
+    def pool_capacity
+      @thread_pool and @thread_pool.pool_capacity
+    end
+
     # Lopez Mode == raw tcp apps
 
     def run_lopez_mode(background=true)
@@ -241,7 +262,12 @@ module Puma
         STDERR.puts "Exception handling servers: #{e.message} (#{e.class})"
         STDERR.puts e.backtrace
       ensure
-        @check.close
+        begin
+          @check.close
+        rescue
+          Thread.current.purge_interrupt_queue if Thread.current.respond_to? :purge_interrupt_queue
+        end
+
         @notify.close
 
         if @status != :restart and @own_binder
